@@ -3,6 +3,7 @@
 import { ActiveUserModal } from '@/app/groups/[groupId]/expenses/active-user-modal'
 import { CreateFromReceiptButton } from '@/app/groups/[groupId]/expenses/create-from-receipt-button'
 import { ExpenseList } from '@/app/groups/[groupId]/expenses/expense-list'
+import { ImportButton } from '@/app/groups/[groupId]/expenses/import-button'
 import ExportButton from '@/app/groups/[groupId]/export-button'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,6 +38,7 @@ export default function GroupExpensesPageClient({
           </CardHeader>
           <CardHeader className="p-4 sm:p-6 flex flex-row space-y-0 gap-2">
             <ExportButton groupId={groupId} />
+            <ImportButton />
             {enableReceiptExtract && <CreateFromReceiptButton />}
             <Button asChild size="icon">
               <Link

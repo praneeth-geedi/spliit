@@ -4,6 +4,12 @@ import {
   RecurrenceRule,
   RecurringExpenseLink,
 } from '@/generated/prisma/client'
+import {
+  importFailure,
+  ImportResult,
+  parseImportFile,
+  planImport,
+} from '@/lib/import-expenses'
 import { prisma } from '@/lib/prisma'
 import { randomId } from '@/lib/random'
 import { ExpenseFormValues, GroupFormValues } from '@/lib/schemas'
@@ -109,6 +115,129 @@ export async function createExpense(
       notes: expenseFormValues.notes,
     },
   })
+}
+
+/** Rows per statement, well under PostgreSQL's limit on bind parameters. */
+const IMPORT_CHUNK_SIZE = 1_000
+
+function chunks<T>(items: T[]) {
+  const result: T[][] = []
+  for (let i = 0; i < items.length; i += IMPORT_CHUNK_SIZE)
+    result.push(items.slice(i, i + IMPORT_CHUNK_SIZE))
+  return result
+}
+
+/**
+ * Imports the expenses of a file made by the JSON or CSV export.
+ *
+ * The whole file is checked before anything is written, and everything is
+ * then written in one transaction: either every expense is imported, or none
+ * is and the group is left as it was. With `dryRun`, only the check runs, and
+ * the result describes what an import would do.
+ */
+export async function importExpenses(
+  groupId: string,
+  content: string,
+  { dryRun, participantId }: { dryRun: boolean; participantId?: string },
+): Promise<ImportResult> {
+  const [group, categories] = await Promise.all([
+    getGroup(groupId),
+    getCategories(),
+  ])
+  if (!group) return importFailure(null, [{ code: 'groupNotFound' }])
+
+  const parsed = parseImportFile(content, { group, categories })
+  if (!parsed.ok) return importFailure(parsed.format, parsed.issues)
+
+  const sourceIds = parsed.expenses.flatMap((e) =>
+    e.sourceId ? [e.sourceId] : [],
+  )
+  const [sameIdExpenses, groupExpenses] = await Promise.all([
+    sourceIds.length > 0
+      ? prisma.expense.findMany({
+          where: { id: { in: sourceIds } },
+          select: { id: true, groupId: true },
+        })
+      : [],
+    prisma.expense.findMany({
+      where: { groupId },
+      select: { expenseDate: true, title: true, amount: true, paidById: true },
+    }),
+  ])
+  const { expenses, summary } = planImport(
+    parsed.format,
+    parsed.expenses,
+    {
+      groupId,
+      groupIdByExpenseId: new Map(sameIdExpenses.map((e) => [e.id, e.groupId])),
+      groupExpenses,
+    },
+    randomId,
+  )
+  if (dryRun || expenses.length === 0) return { ok: true, dryRun, summary }
+
+  // Attributed like expenses created in the form, when the importer said who
+  // they are.
+  const activityParticipantId = group.participants.some(
+    (p) => p.id === participantId,
+  )
+    ? participantId
+    : undefined
+  // Expenses on the same day are listed by creation time: a millisecond apart
+  // keeps them in the file's order.
+  const importedAt = Date.now()
+  const expenseRows = expenses.map((expense, index) => ({
+    id: expense.id,
+    groupId,
+    createdAt: expense.createdAt ?? new Date(importedAt + index),
+    expenseDate: expense.expenseDate,
+    title: expense.title,
+    categoryId: expense.categoryId,
+    amount: expense.amount,
+    originalAmount: expense.originalAmount,
+    originalCurrency: expense.originalCurrency,
+    conversionRate: expense.conversionRate,
+    paidById: expense.paidById,
+    isReimbursement: expense.isReimbursement,
+    splitMode: expense.splitMode,
+    recurrenceRule: RecurrenceRule.NONE,
+    notes: expense.notes,
+  }))
+
+  try {
+    await prisma.$transaction([
+      ...chunks(expenseRows).map((chunk) =>
+        prisma.expense.createMany({ data: chunk }),
+      ),
+      ...chunks(
+        expenses.flatMap((expense) =>
+          expense.paidFor.map(({ participantId, shares }) => ({
+            expenseId: expense.id,
+            participantId,
+            shares,
+          })),
+        ),
+      ).map((chunk) => prisma.expensePaidFor.createMany({ data: chunk })),
+      ...chunks(expenses).map((chunk) =>
+        prisma.activity.createMany({
+          data: chunk.map((expense) => ({
+            id: randomId(),
+            groupId,
+            activityType: ActivityType.CREATE_EXPENSE,
+            participantId: activityParticipantId,
+            expenseId: expense.id,
+            data: expense.title,
+          })),
+        }),
+      ),
+    ])
+  } catch (error) {
+    // The transaction was rolled back: nothing from the file was saved.
+    console.error('Failed to import expenses into group %s', groupId, error)
+    return importFailure(parsed.format, [{ code: 'saveFailed' }])
+  }
+
+  return { ok: true, dryRun, summary }
 }
 
 export async function deleteExpense(

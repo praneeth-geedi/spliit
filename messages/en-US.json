@@ -49,6 +49,103 @@
       "older": "Older"
     }
   },
+  "ImportExpenses": {
+    "triggerTitle": "Import expenses",
+    "title": "Import expenses",
+    "description": "Add expenses to this group from a file made with Export to JSON or Export to CSV.",
+    "body": "Choose a file exported from Spliit. It’s checked first, and you’ll see what it contains before anything is added.",
+    "requirements": "Everyone in the file must already be a participant of this group, with the same name, and the group must use the same currency.",
+    "formats": "JSON keeps everything. CSV doesn’t record who paid when the payer isn’t part of the split, which is often the case for reimbursements: those can only be imported from JSON.",
+    "file": "File:",
+    "chooseFile": "Choose a file",
+    "chooseAnother": "Choose another file",
+    "checking": "Checking the file…",
+    "Preview": {
+      "ready": "{count, plural, one {# expense} other {# expenses}} ready to import from {format}",
+      "dates": "From {first} to {last}",
+      "oneDay": "On {date}",
+      "total": "Total spent (without reimbursements): {total}",
+      "alreadyInGroup": "{count, plural, one {# expense is} other {# expenses are}} already in this group and will be skipped.",
+      "possibleDuplicates": "{count, plural, one {# expense has} other {# expenses have}} the same date, title, amount and payer as one already in this group. {count, plural, one {It} other {They}} will be added again.",
+      "recurring": "{count, plural, one {# recurring expense} other {# recurring expenses}} will be imported as one-off. To make one repeat again, edit its latest occurrence.",
+      "nothingToImport": "Nothing to import: every expense in this file is already in this group.",
+      "import": "{count, plural, one {Import # expense} other {Import # expenses}}",
+      "importing": "Importing…"
+    },
+    "CheckFailed": {
+      "title": "The file couldn’t be checked",
+      "description": "Check your connection and try again. Nothing has been changed."
+    },
+    "Invalid": {
+      "title": "This file can’t be imported",
+      "description": "Nothing has been changed. Fix the problems below, or choose another file.",
+      "more": "…and {count, plural, one {# more problem} other {# more problems}}."
+    },
+    "Failed": {
+      "title": "The import failed",
+      "description": "Nothing was imported, and the group is unchanged. You can try again."
+    },
+    "Unconfirmed": {
+      "title": "The import may not have finished",
+      "description": "The connection was lost before the server answered. Check the list of expenses before trying again, so that nothing is imported twice."
+    },
+    "SuccessToast": {
+      "title": "Expenses imported",
+      "description": "{count, plural, one {# expense was} other {# expenses were}} added to the group."
+    },
+    "rowCsv": "Row {row}: {message}",
+    "rowJson": "Expense {row}: {message}",
+    "Issues": {
+      "fileTooLarge": "The file is too large ({size}). The limit is {max}.",
+      "unreadable": "The file couldn’t be read.",
+      "empty": "The file is empty.",
+      "invalidJson": "The file looks like JSON but can’t be read. It may be damaged or incomplete.",
+      "jsonStructure": "This JSON file isn’t a Spliit export: “{field}” is missing or has the wrong type.",
+      "csvSyntax": "a quoted value is never closed, so the file can’t be read from here on.",
+      "csvHeader": "This isn’t a Spliit CSV export. Its first row must have the columns {expected}, then one column per person.",
+      "csvDuplicateColumn": "{name} has more than one column.",
+      "noExpenses": "The file doesn’t contain any expenses.",
+      "tooManyExpenses": "The file has {count} expenses, but at most {max} can be imported at once. Split it into smaller files.",
+      "currencyMismatch": "The file’s amounts are in {file}, but this group uses {group}. Expenses can only be imported into a group with the same currency.",
+      "unknownParticipants": "These people in the file aren’t participants of this group: {names}. Add them in the group settings, with the same names, then import again.",
+      "jsonExpenseStructure": "“{field}” is missing or has the wrong type.",
+      "jsonUnknownParticipantId": "it refers to a participant (“{id}”) that the file doesn’t list.",
+      "columnCount": "it has {actual} values, but the first row has {expected} columns.",
+      "invalidDate": "“{value}” isn’t a valid date. Use the YYYY-MM-DD format.",
+      "invalidAmount": "“{value}” in {column} isn’t a valid amount. Use a plain number like 12.50: no currency sign, no thousands separator, and no more decimals than the currency has.",
+      "missingValue": "the column for {column} is empty. Use 0 for someone who isn’t part of the expense.",
+      "unknownCategory": "there is no category “{value}”.",
+      "invalidSplitMode": "“{value}” isn’t a split mode. Use Evenly, Unevenly – By shares, Unevenly – By percentage or Unevenly – By amount.",
+      "invalidYesNo": "“{value}” in {column} should be Yes or No.",
+      "invalidCurrencyCode": "“{value}” isn’t a currency code, like EUR.",
+      "payerNotFound": "no one in this row can be the payer.",
+      "multiplePayers": "more than one person looks like the payer. In a Spliit CSV export, only the payer’s amount has the same sign as the cost.",
+      "ambiguousPayer": "the CSV doesn’t say who paid, because the payer isn’t part of the split (often the case for a reimbursement). Import the JSON export instead: it records the payer.",
+      "sharesMismatch": "the people’s amounts add up to {sum}, not to the cost of {amount}.",
+      "unevenSplit": "the split mode is Evenly, but the amounts aren’t even.",
+      "duplicateParticipant": "the same person is in the split more than once.",
+      "invalidField": "{field}: {reason}",
+      "groupNotFound": "This group doesn’t exist anymore.",
+      "saveFailed": "The expenses couldn’t be saved."
+    },
+    "Fields": {
+      "expenseDate": "Date",
+      "title": "Title",
+      "category": "Category",
+      "amount": "Amount",
+      "originalAmount": "Original amount",
+      "originalCurrency": "Original currency",
+      "conversionRate": "Conversion rate",
+      "paidBy": "Paid by",
+      "paidFor": "Split",
+      "notes": "Notes"
+    },
+    "Reasons": {
+      "amountSum": "the amounts don’t add up to the expense amount.",
+      "percentageSum": "the percentages don’t add up to 100%.",
+      "other": "the value isn’t valid."
+    }
+  },
   "ExpenseCard": {
     "paidBy": "Paid by <strong>{paidBy}</strong> for <paidFor></paidFor>",
     "everyone": "everyone",
